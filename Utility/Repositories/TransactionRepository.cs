@@ -26,15 +26,24 @@ namespace Utility.Repositories
             _sellerRepository = sellerRepository;
         }
 
+        public TransactionRepository(DbConnection connection, SellerRepository sellerRepository)
+        {
+            _connectionString = connection.GetConnectionString();
+            _bookRepository = new(connection);
+            _stationeryRepository = new(connection);
+            _sellerRepository = sellerRepository;
+        }
+
         // Create transaction
         public Transaction Create(string seller_id, Dictionary<string, int> books, Dictionary<string, int> stationeries)
         {
             Transaction transaction = new Transaction();
             decimal totalPrice = 0;
             transaction.SellerId = seller_id;
+
             // loop through books
             foreach (KeyValuePair<string, int> book in books) {
-                var price = _bookRepository.GetPriceOfBookById(book.Key);
+                decimal price = _bookRepository.GetPriceOfBookById(book.Key);
                 totalPrice += price * book.Value;
                 transaction.Books.Add(new BookSell() { Id = book.Key, Quantity = book.Value, Price = price });
             }
@@ -59,100 +68,103 @@ namespace Utility.Repositories
         {
             try {
                 Invoice invoice = new Invoice() {
+                    Id = transaction.Id,
                     Seller = _sellerRepository.GetCurrentSession().Seller.Name,
                     Date = DateTime.Now,
-                    Total = transaction.TotalPrice
+                    Total = transaction.TotalPrice,
+                    Items = new List<Item>()
                 };
-                foreach (BookSell book in transaction.Books)
-                {
+
+                transaction.Books.ForEach(book => {
                     invoice.Items.Add(new Item() {
-                        Id = book.Id,
                         Name = _bookRepository.GetBookById(book.Id).Book.Title,
+                        Id = book.Id,
                         Quantity = book.Quantity,
                         Price = book.Price,
-                        Unit = book.Unit != null ? book.Unit : "",
-                    });
-                }
-                foreach (StationerySell stationery in transaction.Stationeries)
-                {
-                    invoice.Items.Add(new Item() {
+                        Unit = "book"
+                    });                    
+                });
+                transaction.Stationeries.ForEach(stationery => {
+                    var s = _stationeryRepository.GetStationeryById(stationery.Id);
+                    invoice.Items.Add(new Item() {                        
+                        Name = s.Stationery.Name,
                         Id = stationery.Id,
-                        Name = _stationeryRepository.GetStationeryById(stationery.Id).Stationery.Name,
                         Quantity = stationery.Quantity,
                         Price = stationery.Price,
-                        Unit = stationery.Unit
+                        Unit = s.Stationery.Unit
                     });
-                }
+                });
+                
                 return new TransactionResponse(true, "Get invoice data succesful", invoice);
             }
             catch (Exception e) {
-                return new TransactionResponse(false, e.Message);
+                Console.WriteLine(e.Message);
+                return new TransactionResponse(false, "An error occurred");
             }
         }
 
-        public async Task<TransactionResponse> Add(Transaction transaction)
+        public TransactionResponse Add(Transaction transaction)
         {
             try {
-                var cmdInsertTran = "INSERT INTO [transactions] (seller_id, create_date, total_price) VALUES (@SellerId, @Date, @TotalPrice)";
-                var cmdGetId = "SELECT @@IDENTITY";
+                var cmdInsertTran = "INSERT INTO [transactions] (id, seller_id, create_date, total_price) VALUES (@id, @SellerId, @Date, @TotalPrice)";
 
-                await SqlHelper.ExecuteNonQueryAsync(_connectionString, CommandType.Text, cmdInsertTran, new SqlParameter[] {
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmdInsertTran, new SqlParameter[] {
+                    new SqlParameter("@id", transaction.Id),
                     new SqlParameter("@SellerId", transaction.SellerId),
                     new SqlParameter("@Date", transaction.CreateDate),
                     new SqlParameter("@TotalPrice", transaction.TotalPrice)
                 });
 
-                var res = await SqlHelper.ExecuteScalarAsync(_connectionString, CommandType.Text, cmdGetId);
-                string transId = res.ToString();
-
-                transaction.Books.ForEach(async book => {
-                    await AddItem(transId, book);
+                transaction.Books.ForEach(book => {
+                    AddItem(transaction.Id, book);
                 });
-                transaction.Stationeries.ForEach(async stationery => {
-                    await AddItem(transId, stationery);
+                transaction.Stationeries.ForEach(stationery => {
+                    AddItem(transaction.Id, stationery);
                 });
                 
                 return new TransactionResponse(true, "Insert transaction succesful");
             }
             catch (Exception ex) {
-                return new TransactionResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new TransactionResponse(false, "An error occurred");
             }
         }
 
         // Add item to a transaction
-        private async Task<int> AddItem(string transactionId, Item item)
+        private int AddItem(string transactionId, Item item)
         {
             try {
                 var cmd = "";
                 switch (item.GetType().Name) {
                     case ITEM_BOOK:
-                        cmd = "INSERT INTO [book_sells] (trams_id, book_id, quantity) VALUES(@trans_id, @item_id, @quantitty)";
+                        cmd = "INSERT INTO [book_sells] (trans_id, book_id, quantity) VALUES(@trans_id, @item_id, @quantity)";
                         break;
                     case ITEM_STATIONERY:
-                        cmd = "INSERT INTO [stationery_sells] (trams_id, stationery_id, quantity) VALUES(@trans_id, @item_id, @quantitty)";
+                        cmd = "INSERT INTO [stationery_sells] (trans_id, stationery_id, quantity) VALUES(@trans_id, @item_id, @quantity)";
                         break;
                     default: 
                         return 0;
                 }
 
-                return await SqlHelper.ExecuteNonQueryAsync(_connectionString, CommandType.Text, cmd, new SqlParameter[] {
+                return SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, new SqlParameter[] {
                     new SqlParameter("@trans_id", transactionId),
                     new SqlParameter("@item_id", item.Id),
-                    new SqlParameter("quantity", item.Quantity)
+                    new SqlParameter("@quantity", item.Quantity)
                 });
 
             }
-            catch {
+            catch(Exception e) {
+                Console.WriteLine(e.Message);
                 throw;
             }
         }
 
         // Get all transactions
-        public async Task<TransactionResponse> GetAll()
+        public TransactionResponse GetAll()
         {
             try {
                 var cmd = "SELECT * FROM [transactions]";
-                var res = await SqlHelper.ExecuteReaderAsync(_connectionString, CommandType.Text, cmd);
+                var res = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd);
                 var transactions = new List<Transaction>();
                 while (res.Read()) {
                     var transaction = new Transaction();
@@ -165,7 +177,8 @@ namespace Utility.Repositories
                 return new TransactionResponse(true, "Get all transactions succesful", transactions);
             }
             catch (Exception ex) {
-                return new TransactionResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new TransactionResponse(false, "An error occurred");
             }
         }
 

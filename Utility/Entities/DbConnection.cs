@@ -5,7 +5,7 @@ namespace Utility.Entities
 {
     public class DbConnection
     {
-        const string SERVERNAME = "localhost";
+        const string SERVERNAME = "127.0.0.1";
         private string _serverName;
         private string _databaseName;
         private string _userName;

@@ -30,6 +30,8 @@ CREATE TABLE dbo.books
 );
 GO
 
+
+
 CREATE TABLE dbo.authors
 (
     [bookId] VARCHAR(24) NOT NULL references dbo.books (id),
@@ -62,7 +64,7 @@ CREATE TABLE dbo.sellers
     [Id] VARCHAR(24) NOT NULL PRIMARY KEY DEFAULT LEFT(REPLACE(LOWER(newid()),'-',''), 24),
     [name] [NVARCHAR](255), 
     [address] [NVARCHAR](255),
-    [phone] [CHAR](10),
+    [phone] [CHAR](10) unique,
     [hash_password] [NVARCHAR](255),
     [role] [NVARCHAR](50) DEFAULT 'seller',
     CHECK ([role] IN ('admin', 'seller')),
@@ -73,10 +75,11 @@ GO
 INSERT INTO dbo.sellers (name, address, phone, hash_password, role)
 VALUES ('admin', 'Sai Gon', '0987654321', '0WqLNdjBkiK18icCZJN5pCXsjhLqxUIeWqV6e4FQUyPK2+Pd', 'admin');
 
+
 CREATE TABLE dbo.transactions
 (
     [Id] VARCHAR(24) NOT NULL PRIMARY KEY DEFAULT LEFT(REPLACE(LOWER(newid()),'-',''), 24),
-    [seller_id] INT NOT NULL references dbo.sellers (Id),
+    [seller_id] VARCHAR(24) NOT NULL references dbo.sellers (Id),
     [create_date] DATETIME DEFAULT CURRENT_TIMESTAMP,
     [total_price] MONEY CHECK ([total_price]>=0)
 );
@@ -104,14 +107,14 @@ GO
 CREATE TABLE dbo.session 
 (
     [id] VARCHAR(24) PRIMARY KEY DEFAULT LEFT(REPLACE(LOWER(newid()),'-',''), 24),
-    [seller_id] CHAR(10) UNIQUE REFERENCES dbo.seller(phone),
+    [seller_id] CHAR(10) UNIQUE REFERENCES sellers(phone),
     [starting_time] DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 GO
 
 
 DECLARE @json VARCHAR(max)
-SELECT @json = BulkColumn FROM OPENROWSET(BULK  '/home/jdiego/projects/booksdb/books.json', SINGLE_CLOB) import
+SELECT @json = BulkColumn FROM OPENROWSET(BULK  '/home/books.json', SINGLE_CLOB) import
 insert into books([id], [title], [isbn], [pageCount], [publishedDate], [thumbnailUrl], [description], [status])
 select [id], [title], [isbn], [pageCount], [publishedDate], [thumbnailUrl], [shortDescription], [status] from OPENJSON(@json)
 WITH (
@@ -129,7 +132,7 @@ GO
 --- Populate book's authors into table
 DECLARE @id VARCHAR(24), @authors NVARCHAR(max)
 DECLARE @json VARCHAR(max)
-SELECT @json = BulkColumn FROM OPENROWSET(BULK '/home/jdiego/projects/booksdb/books.json', SINGLE_CLOB) import
+SELECT @json = BulkColumn FROM OPENROWSET(BULK '/home/books.json', SINGLE_CLOB) import
 DECLARE db_cursor CURSOR FOR
 SELECT * FROM OPENJSON(@json)
 WITH(
@@ -155,7 +158,7 @@ GO
 --- Populate book's categories into table
 DECLARE @id VARCHAR(24), @categories NVARCHAR(max)
 DECLARE @json VARCHAR(max)
-SELECT @json = BulkColumn FROM OPENROWSET(BULK  '/home/jdiego/projects/booksdb/books.json', SINGLE_CLOB) import
+SELECT @json = BulkColumn FROM OPENROWSET(BULK  '/home/books.json', SINGLE_CLOB) import
 DECLARE db_cursor CURSOR FOR
 SELECT * FROM OPENJSON(@json)
 WITH(
@@ -178,46 +181,38 @@ CLOSE db_cursor
 DEALLOCATE db_cursor
 GO
 
--- import stationery data from Stationery.csv
-INSERT INTO Stationery(product_name, thumbnail_url, unit, price, quantity)
-  SELECT *
-  FROM  OPENROWSET(BULK '/home/jdiego/projects/booksdb/Stationery.csv',
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    ROWTERMINATOR = '\n'
-  ) as t1 ;
+
+DECLARE @json VARCHAR(max)
+SELECT @json = BulkColumn FROM OPENROWSET(BULK  '/home/stationery.json', SINGLE_CLOB) import
+INSERT INTO stationeries(product_name, price, unit, thumbnail_url)
+select [product_name], [price], [Unit], [Thumbnail]from OPENJSON(@json)
+WITH (
+    -- id VARCHAR(10) '$.ID',
+    [product_name] VARCHAR(255) '$.ProductName',
+    [price] MONEY '$.Price',
+    [unit] VARCHAR(10) '$.Unit',
+    [thumbnail] VARCHAR(255) '$.Thumbnail'
+)
 GO
 
+select books.*, author, category from books
+join authors on books.id = authors.bookId
+join categories on books.id = categories.bookId
 
--- User-defined function that return new table contains: book id, book's name, price, quantity
-CREATE FUNCTION [dbo].[get_transaction_detail]
-(
-    @transaction_id VARCHAR(24)
-)
-RETURNS @res TABLE (
-    [book_id] VARCHAR(24),
-    [book_name] VARCHAR(255),
-    [price] MONEY,
-    [unit] VARCHAR(10),
-    [quantity] INT,
-    [total_price] MONEY
-)
-AS
-BEGIN
-    DECLARE @book_unit VARCHAR(10) = 'book'
+update books 
+set price= (abs(round((CHECKSUM(NEWID())%100*4.0)/15, 2)) + 10),
+    quantity =(abs(cast(newid() as binary(6)) % 150)+50)
+go
 
-    INSERT INTO @res
-    SELECT b.id, b.title, b.price, @book_unit, s.quantity, s.quantity * b.price
-        FROM dbo.books b 
-        JOIN (SELECT * FROM dbo.book_sells WHERE trans_id=@transaction_id) AS s 
-        ON b.id = s.book_id
 
-    INSERT INTO @res
-    SELECT st.id, st.product_name, st.price, st.unit, s.quantity, s.quantity * st.price
-        FROM dbo.stationeries st 
-        JOIN (SELECT * FROM dbo.stationery_sells WHERE trans_id=@transaction_id) AS s 
-        ON st.id = s.book_id
-    RETURN
-END
+update stationeries
+set quantity = (abs(cast(newid() as binary(6)) % 150)+50)
+go
 
+-- select * from books where id in ('53c2ae8528d75d572c06ad9f', '53c2ae8528d75d572c06ad9d')
+-- select * from stationeries where id in ('00ac74ced6ad4425a69ed6d0', '02caaf41bc3649dab0278175')
+
+-- select * from transactions
+-- SELECT * from book_sells
+-- select * from stationery_sells
 

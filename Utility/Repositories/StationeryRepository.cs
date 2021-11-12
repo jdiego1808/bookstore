@@ -10,6 +10,7 @@ namespace Utility.Repositories
     public class StationeryRepository
     {
         private readonly string _connectionString;
+        private const string DEFAULT_IMAGE = "https://icon-library.com/images/photo-placeholder-icon/photo-placeholder-icon-14.jpg";
 
         public StationeryRepository(DbConnection connection)
         {
@@ -17,33 +18,40 @@ namespace Utility.Repositories
         }
 
         public StationeryRepository() {
-            DbConnection connection = new DbConnection("Bookstore", "sa", "qwertASDF");
+            DbConnection connection = new DbConnection("Bookstore", "sa", "JDiego1808!");
             _connectionString = connection.GetConnectionString();
         }
 
         // Get all stationery
         public StationeryResponse GetAllStationeries() {
             try {
-                var cmd = "SELLECT * FROM stationeries";
+                var cmd = "SELECT * FROM stationeries";
                 List<Stationery> stationeries = new List<Stationery>();
                 using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd);
+                if (reader.HasRows) {
+                    while(reader.Read()) {
+                        string imageUrl = reader["thumbnail_url"].ToString();
+                        string unit = reader["unit"].ToString();
+                        string price = reader["price"].ToString();
+                        string quantity = reader["quantity"].ToString();
 
-                while(reader.Read()) {
-                    var stationery = new Stationery() {
-                        Id = reader["id"].ToString(),
-                        Name = reader["product_name"].ToString(),
-                        ImageUrl = reader["thumbnail_url"].ToString(),
-                        Unit = reader["unit"].ToString(),
-                        Price = Convert.ToDecimal(reader["price"]),
-                        Quantity = Convert.ToInt32(reader["quantity"]),
-                    };
-                    stationeries.Add(stationery);
+                        var stationery = new Stationery() {
+                            Id = reader["id"].ToString(),
+                            Name = reader["product_name"].ToString(),
+                            ImageUrl = string.IsNullOrEmpty(imageUrl) ? DEFAULT_IMAGE : imageUrl,
+                            Unit = string.IsNullOrEmpty(unit) ? "unspecificed" : unit,
+                            Price = string.IsNullOrEmpty(price) ? 0 : Convert.ToDecimal(price),
+                            Quantity = string.IsNullOrEmpty(quantity) ? 0 : Convert.ToInt32(quantity)
+                        };
+                        stationeries.Add(stationery);
+                    }
+                    return new StationeryResponse(true, "Fetch data successful", stationeries);
                 }
-                return new StationeryResponse(true, "Fetch data successful", stationeries);
-
+                return new StationeryResponse(false, "No data found");
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Fetch data failed");
             }
         }
         
@@ -54,20 +62,26 @@ namespace Utility.Repositories
                 using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd, new SqlParameter("@id", id));
 
                 if(reader.Read()) {
+                    string imageUrl = reader["thumbnail_url"].ToString();
+                    string unit = reader["unit"].ToString();
+                    string price = reader["price"].ToString();
+                    string quantity = reader["quantity"].ToString();
+
                     var stationery = new Stationery() {
                         Id = reader["id"].ToString(),
                         Name = reader["product_name"].ToString(),
-                        ImageUrl = reader["thumbnail_url"].ToString(),
-                        Unit = reader["unit"].ToString(),
-                        Price = Convert.ToDecimal(reader["price"]),
-                        Quantity = Convert.ToInt32(reader["quantity"]),
+                        ImageUrl = string.IsNullOrEmpty(imageUrl) ? DEFAULT_IMAGE : imageUrl,
+                        Unit = string.IsNullOrEmpty(unit) ? "unspecificed" : unit,
+                        Price = string.IsNullOrEmpty(price) ? 0 : Convert.ToDecimal(price),
+                        Quantity = string.IsNullOrEmpty(quantity) ? 0 : Convert.ToInt32(quantity)
                     };
                     return new StationeryResponse(true, "Fetch data successful", stationery);
                 }
                 return new StationeryResponse(false, "Stationery not found");
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Fetch data failed");
             }
         }
 
@@ -80,13 +94,18 @@ namespace Utility.Repositories
 
                 if (reader.HasRows) {
                     while(reader.Read()) {
+                        string imageUrl = reader["thumbnail_url"].ToString();
+                        string unit = reader["unit"].ToString();
+                        string price = reader["price"].ToString();
+                        string quantity = reader["quantity"].ToString();
+
                         var stationery = new Stationery() {
                             Id = reader["id"].ToString(),
                             Name = reader["product_name"].ToString(),
-                            ImageUrl = reader["thumbnail_url"].ToString(),
-                            Unit = reader["unit"].ToString(),
-                            Price = Convert.ToDecimal(reader["price"]),
-                            Quantity = Convert.ToInt32(reader["quantity"]),
+                            ImageUrl = string.IsNullOrEmpty(imageUrl) ? DEFAULT_IMAGE : imageUrl,
+                            Unit = string.IsNullOrEmpty(unit) ? "unspecificed" : unit,
+                            Price = string.IsNullOrEmpty(price) ? 0 : Convert.ToDecimal(price),
+                            Quantity = string.IsNullOrEmpty(quantity) ? 0 : Convert.ToInt32(quantity)
                         };
                         stationeries.Add(stationery);
                     }
@@ -95,7 +114,8 @@ namespace Utility.Repositories
                 return new StationeryResponse(false, "Stationery not found");
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Fetch data failed");
             }
         }
 
@@ -120,7 +140,7 @@ namespace Utility.Repositories
         public StationeryResponse InsertStationery(Stationery stationery) {
             try {
                 var cmd = "INSERT INTO stationeries (product_name, thumbnail_url, unit, price, quantity) " 
-                    + "VALUES (@id, @name, @imageUrl, @unit, @price, @quantity)";
+                    + "VALUES (@name, @imageUrl, @unit, @price, @quantity)";
                 var parameters = new SqlParameter[] {
                     new SqlParameter("@name", stationery.Name),
                     new SqlParameter("@imageUrl", stationery.ImageUrl),
@@ -128,14 +148,13 @@ namespace Utility.Repositories
                     new SqlParameter("@price", stationery.Price),
                     new SqlParameter("@quantity", stationery.Quantity)
                 };
-                int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected > 0) {
-                    return new StationeryResponse(true, "Insert data successful");
-                }
-                return new StationeryResponse(false, "Insert data failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
+                return new StationeryResponse(true, "Insert data successful");
+
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Insert failed");
             }
         }
         
@@ -149,14 +168,14 @@ namespace Utility.Repositories
                     new SqlParameter("@unit", stationery.Unit),
                     new SqlParameter("@id", stationery.Id)
                 };
-                int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected > 0) {
-                    return new StationeryResponse(true, "Update data successful");
-                }
-                return new StationeryResponse(false, "Update data failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
+
+                return new StationeryResponse(true, "Update data successful");
+
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Update failed");
             }
         }
 
@@ -168,14 +187,12 @@ namespace Utility.Repositories
                     new SqlParameter("@price", price),
                     new SqlParameter("@id", id)
                 };
-                int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected > 0) {
-                    return new StationeryResponse(true, "Update data successful");
-                }
-                return new StationeryResponse(false, "Update data failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
+                return new StationeryResponse(true, "Update data successful");
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Update failed");
             }
         }
 
@@ -187,14 +204,14 @@ namespace Utility.Repositories
                     new SqlParameter("@quantity", quantity),
                     new SqlParameter("@id", id)
                 };
-                int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected > 0) {
-                    return new StationeryResponse(true, "Update data successful");
-                }
-                return new StationeryResponse(false, "Update data failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
+
+                return new StationeryResponse(true, "Update data successful");
+
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Update failed");
             }
         }
 
@@ -205,14 +222,13 @@ namespace Utility.Repositories
                 var parameters = new SqlParameter[] {
                     new SqlParameter("@id", id)
                 };
-                int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected > 0) {
-                    return new StationeryResponse(true, "Delete data successful");
-                }
-                return new StationeryResponse(false, "Delete data failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
+                return new StationeryResponse(true, "Delete data successful");
+
             }
             catch (Exception ex) {
-                return new StationeryResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new StationeryResponse(false, "Delete failed");
             }
         }
         

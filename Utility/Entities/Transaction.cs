@@ -14,7 +14,19 @@ namespace Utility.Entities
 
         public Transaction()
         {
+            Id = GenerateId();
             CreateDate = DateTime.Now;
+            Books = new List<BookSell>();
+            Stationeries = new List<StationerySell>();
+        }
+
+        public string GenerateId()
+        {
+            string id = Guid.NewGuid().ToString();
+            var tmp = id.Split('-');
+            tmp[^1] = tmp[^1].Substring(0, 4);
+            id = string.Concat(tmp);
+            return id;
         }
     }
 }

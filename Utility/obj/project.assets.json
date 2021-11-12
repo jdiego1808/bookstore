@@ -1025,26 +1025,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\nhath\\.nuget\\packages\\": {}
+    "/home/jdiego/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Utility\\Utility.csproj",
+      "projectUniqueName": "/home/jdiego/projects/import_data/Utility/Utility.csproj",
       "projectName": "Utility",
-      "projectPath": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Utility\\Utility.csproj",
-      "packagesPath": "C:\\Users\\nhath\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Utility\\obj\\",
+      "projectPath": "/home/jdiego/projects/import_data/Utility/Utility.csproj",
+      "packagesPath": "/home/jdiego/.nuget/packages/",
+      "outputPath": "/home/jdiego/projects/import_data/Utility/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\nhath\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "/home/jdiego/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net5.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -1078,12 +1076,22 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[5.0.0, 5.0.0]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[5.0.0, 5.0.0]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.401\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/5.0.402/RuntimeIdentifierGraph.json"
       }
     }
   }

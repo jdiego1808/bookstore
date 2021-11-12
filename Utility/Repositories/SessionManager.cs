@@ -36,7 +36,7 @@ namespace Utility.Repositories
 
             if (CheckSessionExist(seller_id)) {
                 var updateCmd = "UPDATE session SET starting_time=@time WHERE seller_id=@phone";
-                return SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, updateCmd, paramPhone, paramTime);
+                return SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, updateCmd, new SqlParameter[] { paramPhone, paramTime });
             }
             
             var insertCmd = "INSERT INTO session(seller_id) VALUES(@phone)";            
@@ -52,7 +52,7 @@ namespace Utility.Repositories
         }
 
         private bool CheckSessionExist(string seller_id) {
-            var cmd = "SELLECT * FROM session WHERE seller_id=@phone";
+            var cmd = "SELECT * FROM session WHERE seller_id=@phone";
             SqlParameter paramPhone = new("@phone", SqlDbType.Char) { Value = seller_id };
             using var res = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd, paramPhone);
             return res.HasRows;

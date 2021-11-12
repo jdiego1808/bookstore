@@ -13,8 +13,8 @@ namespace Utility.Entities.Responses
 
         public BooksResponse(bool success, string message)
         {
-            Success = false;
-            Message = string.Empty;
+            Success = success;
+            Message = message;
             Books = new List<Book>();
             Count = 0;
             Book = new Book();

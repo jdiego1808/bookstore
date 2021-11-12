@@ -21,15 +21,15 @@ namespace Utility.Repositories
         }
 
         public SellerRepository() {
-            DbConnection connection = new DbConnection("Bookstore", "sa", "qwertASDF");
+            DbConnection connection = new DbConnection("Bookstore", "sa", "JDiego1808!");
             _connectionString = connection.GetConnectionString();
             _session = new(connection);
         }
 
-        public Seller GetSellerByPhone(string phone) {
-            var cmd = "SELECT * FROM seller WHERE @phone=phone";
+        private Seller GetSellerByPhone(string phone) {
+            var cmd = "SELECT * FROM sellers WHERE @phone=phone";
             SqlParameter phoneParam = new SqlParameter("@phone", SqlDbType.Char) { Value = phone };
-            using var res = SqlHelper.ExecuteReader(_connectionString, cmd, phoneParam);
+            using var res = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd, phoneParam);
             if (res.HasRows)
             {
                 res.Read();
@@ -47,7 +47,7 @@ namespace Utility.Repositories
             return null;
         }
 
-        public Seller GetSellerById(string id) {
+        private Seller GetSellerById(string id) {
             var cmd = "SELECT * FROM seller WHERE id=@id";
             SqlParameter phoneParam = new SqlParameter("@id", SqlDbType.VarChar) { Value = id };
             using var res = SqlHelper.ExecuteReader(_connectionString, cmd, phoneParam);
@@ -88,7 +88,8 @@ namespace Utility.Repositories
             }
             catch(Exception ex)
             {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occured");
             }
         }
 
@@ -101,23 +102,26 @@ namespace Utility.Repositories
 
                 int res1 = _session.UpsertSession(seller.Phone);
                 if (res1 == 0) return new SellerResponse(false, "Session update error");
-
-                return new SellerResponse(true, "Seller registration successful", seller);
+                Seller newSeller = GetSellerByPhone(seller.Phone);
+                return new SellerResponse(true, "Seller registration successful", newSeller);
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
-        public SellerResponse Logout(string phone) {
+        public SellerResponse Logout() {
             try {
-                int res = _session.DeleteSession(phone);
+                var session = _session.GetCurrentSession();
+                int res = _session.DeleteSession(session.SellerId);
                 if (res == 0) return new SellerResponse(false, "Session update error");
 
                 return new SellerResponse(true, "Logout successful");
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
@@ -130,11 +134,12 @@ namespace Utility.Repositories
                 return new SellerResponse(true, "Session found", seller);
             } 
             catch (Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
-        public int AddSeller(Seller seller) {
+        private int AddSeller(Seller seller) {
             try {
 
                 if (string.IsNullOrEmpty(seller.Phone) || string.IsNullOrEmpty(seller.Name) || string.IsNullOrEmpty(seller.Password)) {
@@ -181,7 +186,8 @@ namespace Utility.Repositories
                 return new SellerResponse(true, "Password update successful");
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
@@ -212,23 +218,21 @@ namespace Utility.Repositories
 
                 return new SellerResponse(true, "Seller role update successful");
             }
-            catch(Exception ex)
-            {
-                return new SellerResponse(false, ex.Message);
+            catch(Exception ex) {
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
         public SellerResponse UpdateSellerAddress(string phone, string address)
         {
-            try
-            {
-                if (_session.GetCurrentSession() == null)
-                {
+            try {
+                if (_session.GetCurrentSession() == null) {
                     return new SellerResponse(false, "You are not authorized to perform this action");
                 }
+
                 var storedSeller = GetSellerByPhone(phone);
-                if (storedSeller == null)
-                {
+                if (storedSeller == null) {
                     return new SellerResponse(false, "No seller found. Please check the phone number.");
                 }
 
@@ -238,28 +242,25 @@ namespace Utility.Repositories
                     new SqlParameter("@phone", SqlDbType.Char) { Value = phone }
                 };
 
-                int res = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, sqlParams);
-                if (res == 0) return new SellerResponse(false, "Address update failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, sqlParams);
 
                 return new SellerResponse(true, "Seller address update successful");
             }
-            catch(Exception ex)
-            {
-                return new SellerResponse(false, ex.Message);
+            catch(Exception ex) {
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
         public SellerResponse UpdateSellerName(string phone, string name)
         {
-            try
-            {
-                if (_session.GetCurrentSession() == null)
-                {
+            try {
+                if (_session.GetCurrentSession() == null) {
                     return new SellerResponse(false, "You are not authorized to perform this action");
                 }
+                
                 var storedSeller = GetSellerByPhone(phone);
-                if (storedSeller == null)
-                {
+                if (storedSeller == null) {
                     return new SellerResponse(false, "No seller found. Please check the phone number.");
                 }
 
@@ -269,14 +270,13 @@ namespace Utility.Repositories
                     new SqlParameter("@phone", SqlDbType.Char) { Value = phone }
                 };
 
-                int res = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, sqlParams);
-                if (res == 0) return new SellerResponse(false, "Name update failed");
+                SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, sqlParams);
 
                 return new SellerResponse(true, "Seller name update successful");
             }
-            catch(Exception ex)
-            {
-                return new SellerResponse(false, ex.Message);
+            catch(Exception ex) {
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
         
@@ -304,7 +304,8 @@ namespace Utility.Repositories
                 return new SellerResponse(true, "Seller phone update successful");
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
@@ -333,7 +334,8 @@ namespace Utility.Repositories
                 return new SellerResponse(true, "Seller delete successful");
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
 
@@ -362,7 +364,8 @@ namespace Utility.Repositories
                 return new SellerResponse(true, "Seller delete successful");
             }
             catch(Exception ex) {
-                return new SellerResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new SellerResponse(false, "An error occurred");
             }
         }
     }

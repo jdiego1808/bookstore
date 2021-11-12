@@ -13,8 +13,8 @@ namespace Utility.Entities.Responses
 
         public StationeryResponse(bool success, string message)
         {
-            Success = false;
-            Message = string.Empty;
+            Success = success;
+            Message = message;
             Stationeries = new List<Stationery>();
             Count = 0;
             Stationery = new Stationery();

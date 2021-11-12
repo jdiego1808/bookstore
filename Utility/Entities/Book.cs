@@ -18,5 +18,18 @@ namespace Utility.Entities
         public List<string> Authors { get; set; }        
         public List<string> Categories { get; set; }
 
+        public override string ToString()
+        {            
+            return ($"{Id} - {Title} - {PageCount} - {PublishedDate} - {Price} - {Quantity} - {Status}");
+        }
+
+        public string GenerateId()
+        {
+            string id = Guid.NewGuid().ToString();
+            var tmp = id.Split('-');
+            tmp[^1] = tmp[^1].Substring(0, 4);
+            id = string.Concat(tmp);
+            return id;
+        }
     }
 }

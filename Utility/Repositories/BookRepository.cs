@@ -12,6 +12,7 @@ namespace Utility.Repositories
     public class BookRepository 
     {
         private readonly string _connectionString;
+        private const string DEFAULT_IMAGE = "https://icon-library.com/images/photo-placeholder-icon/photo-placeholder-icon-14.jpg";
 
         public BookRepository(DbConnection connection)
         {
@@ -19,7 +20,7 @@ namespace Utility.Repositories
         }
 
         public BookRepository() {
-            DbConnection connection = new ("BooksDB", "sa", "qwertASDF");
+            DbConnection connection = new ("Bookstore", "sa", "JDiego1808!");
             _connectionString = connection.GetConnectionString();
         }
 
@@ -27,25 +28,6 @@ namespace Utility.Repositories
             try {
                 var books = new List<Book>();
                 var cmdBooks = "SELECT * FROM books";
-               /* var cmdAuthors = "SELECT * FROM authors";
-                var cmdCategories = "SELECT * FROM categories";
-
-                Dictionary<string, List<string>> categories = new();
-                Dictionary<string, List<string>> authors = new();
-
-                using var dsAuthors = SqlHelper.ExecuteDataset(_connectionString, CommandType.Text, cmdAuthors);
-                {
-                    authors = dsAuthors.Tables[0].AsEnumerable()
-                        .GroupBy(r => r.Field<string>("bookId"))
-                        .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("author")).ToList());
-                }
-                using var dsCategories = SqlHelper.ExecuteDataset(_connectionString, CommandType.Text, cmdCategories);
-                {
-                    categories = dsCategories.Tables[0].AsEnumerable()
-                        .GroupBy(r => r.Field<string>("bookId"))
-                        .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("category")).ToList());
-                }*/
-
                 
                 using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmdBooks);
                 {
@@ -63,11 +45,9 @@ namespace Utility.Repositories
                             book.PageCount = Convert.ToInt32(reader["pageCount"]);
                             book.Description = reader["description"] != null ? reader["description"].ToString() : "";
                             book.Status = reader["status"].ToString();
-                            book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
-                            book.Price = Convert.ToDecimal(reader["price"]);
-                            book.Quantity = Convert.ToInt32(reader["quantity"]);
-                            /* book.Authors = authors.TryGetValue(id, out List<string> authorList) ? authorList : new List<string>();
-                             book.Categories = categories.TryGetValue(id, out List<string> categoryList) ? categoryList : new List<string>();*/
+                            book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : DEFAULT_IMAGE;
+                            book.Price = reader["price"].ToString() == null ? -1 : Convert.ToDecimal(reader["price"]);
+                            book.Quantity = reader["quantity"] != null ? Convert.ToInt32(reader["quantity"]) : 0;
                             book.Authors = GetAuthorsByBookId(id);
                             book.Categories = GetCategoriesByBookId(id);
                             
@@ -77,12 +57,11 @@ namespace Utility.Repositories
                     }
                     else return new BooksResponse(false, "Fetch data failed");
                 }
-
-                
                 return new BooksResponse(true, "Fetch data successful", books);
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Fetch data failed");
             }
         }
 
@@ -101,9 +80,9 @@ namespace Utility.Repositories
                     book.PageCount = Convert.ToInt32(reader["pageCount"]);
                     book.Description = reader["description"] != null ? reader["description"].ToString() : "";
                     book.Status = reader["status"].ToString();
-                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
-                    book.Price = Convert.ToDecimal(reader["price"]);
-                    book.Quantity = Convert.ToInt32(reader["quantity"]);
+                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : DEFAULT_IMAGE;
+                    book.Price = reader["price"].ToString() == null ? -1 : Convert.ToDecimal(reader["price"]);
+                    book.Quantity = reader["quantity"] != null ? Convert.ToInt32(reader["quantity"]) : 0;
                     book.Authors = GetAuthorsByBookId(id);
                     book.Categories = GetCategoriesByBookId(id);
                     return new BooksResponse(true, "Fetch data successful", book);
@@ -111,7 +90,8 @@ namespace Utility.Repositories
                 return new BooksResponse(false, "Book not found");
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Fetch data failed");
             }
         }
 
@@ -128,14 +108,15 @@ namespace Utility.Repositories
                     string d = reader["publishedDate"].ToString();
                     if (string.IsNullOrEmpty(d)) book.PublishedDate = DateTime.MinValue;
                     else book.PublishedDate = DateTime.Parse(d, CultureInfo.InvariantCulture);
+                    
                     book.Title = reader["title"].ToString();
                     book.Isbn = reader["isbn"].ToString();
                     book.PageCount = Convert.ToInt32(reader["pageCount"]);
                     book.Description = reader["description"] != null ? reader["description"].ToString() : "";
                     book.Status = reader["status"].ToString();
-                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
-                    book.Price = Convert.ToDecimal(reader["price"]);
-                    book.Quantity = Convert.ToInt32(reader["quantity"]);
+                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : DEFAULT_IMAGE;
+                    book.Price = reader["price"].ToString() == null ? -1 : Convert.ToDecimal(reader["price"]);
+                    book.Quantity = reader["quantity"] != null ? Convert.ToInt32(reader["quantity"]) : 0;
                     book.Authors = GetAuthorsByBookId(id);
                     book.Categories = GetAuthorsByBookId(id);
 
@@ -144,7 +125,8 @@ namespace Utility.Repositories
                 return new BooksResponse(true, "Fetch data successful", books);
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Fetch data failed");
             }
         }
 
@@ -196,6 +178,9 @@ namespace Utility.Repositories
 
         // Update basic info of a book by book id
         public BooksResponse UpdateBookBasicInfo(Book book) {
+            if (book == null) return new BooksResponse(false, "Book is null");
+            if (book.Id == null) return new BooksResponse(false, "Book id is null");
+
             try {
                 var cmd = "UPDATE books SET title = @title, isbn = @isbn, pageCount = @pageCount,"
                     + " description = @description, publishedDate = @publishedDate,"
@@ -204,20 +189,25 @@ namespace Utility.Repositories
 
                 var parameters = new List<SqlParameter>
                 {
-                    new SqlParameter("@title", book.Title),
-                    new SqlParameter("@isbn", book.Isbn),
-                    new SqlParameter("@pageCount", book.PageCount),
-                    new SqlParameter("@description", book.Description),
-                    new SqlParameter("@publishedDate", book.PublishedDate),
-                    new SqlParameter("@status", book.Status),
-                    new SqlParameter("@thumbnailurl", book.ImagelUrl),
-                    new SqlParameter("@id", book.Id)
+                    new SqlParameter("@title", SqlDbType.VarChar) { Value = book.Title ?? (object)DBNull.Value },
+                    new SqlParameter("@isbn", SqlDbType.VarChar) { Value = book.Isbn ?? (object)DBNull.Value },
+                    new SqlParameter("@pageCount", SqlDbType.Int) { 
+                        Value = book.PageCount.ToString() != null ? book.PageCount : DBNull.Value 
+                    },
+                    new SqlParameter("@description", SqlDbType.VarChar) { Value = book.Description ?? (object)DBNull.Value },
+                    new SqlParameter("@publishedDate", SqlDbType.DateTime) { 
+                        Value = book.PublishedDate.ToString() != null ? book.PublishedDate : DBNull.Value 
+                    },
+                    new SqlParameter("@status", SqlDbType.VarChar) { Value = book.Status ?? (object)DBNull.Value },
+                    new SqlParameter("@thumbnailurl", SqlDbType.VarChar) { Value = book.ImagelUrl ?? (object)DBNull.Value },
+                    new SqlParameter("@id", SqlDbType.VarChar) { Value = book.Id }
                 };
                 SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters.ToArray());
                 return new BooksResponse(true, "Update book successful", book);
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Update failed");
             }
         }
 
@@ -227,14 +217,12 @@ namespace Utility.Repositories
                 var cmd = "DELETE FROM authors WHERE bookId = @id";
                 SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, new SqlParameter("@id", id));
 
-                int res = InsertBookAuthors(id, authors);
-                if (res != 0) {
-                    return new BooksResponse(true, "Update authors successful");
-                }
-                return new BooksResponse(false, "Update authors failed");
+                InsertBookAuthors(id, authors);
+                return new BooksResponse(success: true, message: "Update authors successful");
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Update failed");
             }
         }
 
@@ -244,14 +232,13 @@ namespace Utility.Repositories
                 var cmd = "DELETE FROM categories WHERE bookId = @id";
                 SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, new SqlParameter("@id", id));
 
-                int res = InsertBookCategories(id, categories);
-                if (res != 0) {
-                    return new BooksResponse(true, "Update categories successful");
-                }
-                return new BooksResponse(false, "Update categories failed");
+                InsertBookCategories(id, categories);
+                return new BooksResponse(success: true, message: "Update categories successful");
+            
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Update failed");
             }
         }
 
@@ -269,7 +256,8 @@ namespace Utility.Repositories
                 return new BooksResponse(true, "Update quantity successful");
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Update failed");
             }
         }
 
@@ -287,79 +275,107 @@ namespace Utility.Repositories
                 return new BooksResponse(true, "Update price successful");
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);
+                return new BooksResponse(false, "Update failed");
             }
         }
 
         // Insert book authors
-        public int InsertBookAuthors(string id, List<string> authors) {
+        public int InsertBookAuthors(string id, List<string> authors) {            
             try {
                 int rowAffected = 0;
+                SqlParameter paramId = new SqlParameter("@bookId", id);
                 foreach (var author in authors)
                 {
                     var cmd = "INSERT INTO authors (bookId, author) VALUES (@bookId, @author)";
-                    rowAffected  = SqlHelper.ExecuteNonQuery(
+                    int res = SqlHelper.ExecuteNonQuery(
                         _connectionString, 
                         CommandType.Text, 
                         cmd, 
-                        new SqlParameter("@bookId", id), 
-                        new SqlParameter("@author", author)
+                        new SqlParameter[] { paramId, new SqlParameter("@author", author) }
                     );
+                    
+                    rowAffected += res;
                 }
                 return rowAffected;
             }
-            catch { throw; }
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+            
         }
 
         // Insert book categories
         public int InsertBookCategories(string id, List<string> categories) {
+            
             try {
+                SqlParameter paramId = new SqlParameter("@bookId", id);
                 int rowAffected = 0;
                 foreach (var category in categories)
                 {
                     var cmd = "INSERT INTO categories (bookId, category) VALUES (@bookId, @category)";
-                    rowAffected  = SqlHelper.ExecuteNonQuery(
+                    int res  = SqlHelper.ExecuteNonQuery(
                         _connectionString, 
                         CommandType.Text, 
                         cmd, 
-                        new SqlParameter("@bookId", id), 
-                        new SqlParameter("@category", category)
+                        new SqlParameter[] { paramId,  new SqlParameter("@category", category) }
                     );
+                    rowAffected += res;
                 }
                 return rowAffected;
             }
-            catch { throw; }
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+        
         }
 
         // Insert a new book
         public BooksResponse InsertBook(Book book) {
+            book.Id = book.GenerateId();
+            Console.WriteLine(book);
             try {
-                var cmd = "INSERT INTO books (title, isbn, pageCount, description, publishedDate, status, thumbnailurl, price, quantity) "
-                    + "VALUES (@title, @isbn, @pageCount, @description, @publishedDate, @status, @thumbnailurl, @price, @quantity)";
+                var cmd = "INSERT INTO books (id, title, isbn, pageCount, description, publishedDate, status, thumbnailurl, price, quantity) "
+                    + "VALUES (@id, @title, @isbn, @pageCount, @description, @publishedDate, @status, @thumbnailurl, @price, @quantity)";
 
                 SqlParameter[] parameters = new SqlParameter[] {
-                    new SqlParameter("@title", book.Title),
-                    new SqlParameter("@isbn", book.Isbn),
-                    new SqlParameter("@pageCount", book.PageCount),
-                    new SqlParameter("@description", book.Description),
-                    new SqlParameter("@publishedDate", book.PublishedDate),
-                    new SqlParameter("@status", book.Status),
-                    new SqlParameter("@thumbnailurl", book.ImagelUrl),
-                    new SqlParameter("@price", book.Price),
-                    new SqlParameter("@quantity", book.Quantity)
+                    new SqlParameter("@id", SqlDbType.VarChar) { Value = book.Id },
+                    new SqlParameter("@title", SqlDbType.VarChar) { Value = book.Title ?? (object)DBNull.Value },
+                    new SqlParameter("@isbn", SqlDbType.VarChar) { Value = book.Isbn ?? (object)DBNull.Value },
+                    new SqlParameter("@pageCount", SqlDbType.Int) { 
+                        Value = book.PageCount.ToString() != null ? book.PageCount : DBNull.Value 
+                    },
+                    new SqlParameter("@description", SqlDbType.VarChar) { Value = book.Description ?? (object)DBNull.Value },
+                    new SqlParameter("@publishedDate", SqlDbType.DateTime) { 
+                        Value = book.PublishedDate.ToString() != null ? book.PublishedDate : DBNull.Value 
+                    },
+                    new SqlParameter("@status", SqlDbType.VarChar) { Value = book.Status ?? (object)DBNull.Value },
+                    new SqlParameter("@thumbnailurl", SqlDbType.VarChar) { Value = book.ImagelUrl ?? (object)DBNull.Value },
+                    new SqlParameter("@price", SqlDbType.Decimal) { 
+                        Value = book.Price.ToString() != null ? book.Price : (object)DBNull.Value 
+                    },
+                    new SqlParameter("@quantity", SqlDbType.Int) { 
+                        Value = book.Quantity.ToString() != null ? book.Quantity : 1
+                    }
                 };
                 int rowAffected = SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, parameters);
-                if (rowAffected == 0) {
-                    return new BooksResponse(true, "Insert book failed");
-                }
-                InsertBookAuthors(book.Id, book.Authors);
-                InsertBookCategories(book.Id, book.Categories);
 
+                if (rowAffected == 0) {
+                    return new BooksResponse(false, "Insert book failed");
+                }                               
+
+                InsertBookAuthors(book.Id, book.Authors);
+                InsertBookCategories(book.Id, book.Categories);                
+                
                 return new BooksResponse(true, "Insert book successful", book);
             }
-            catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+            catch (Exception ex) {           
+                Console.WriteLine(ex.Message);    
+                return new BooksResponse(false, "Insert failed");                
             }
+            
         }
 
         // Delete a book by book id and delete all related data
@@ -380,7 +396,8 @@ namespace Utility.Repositories
                 return new BooksResponse(true, "Delete book successful");
             }
             catch (Exception ex) {
-                return new BooksResponse(false, ex.Message);
+                Console.WriteLine(ex.Message);    
+                return new BooksResponse(false, "Delete failed");
             }
         }
 

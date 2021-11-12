@@ -5,6 +5,7 @@ using System.Linq;
 using System.Data;
 using Utility.Repositories;
 using Utility.Entities;
+using Utility.Entities.Responses;
 
 namespace Test
 {
@@ -12,39 +13,33 @@ namespace Test
     {
         static void Main(string[] args)
         {
-           BookRepository bookRespository = new();
-            /* var res = bookRespository.GetAll();
-             var books = res.Books;
-           
-            Console.WriteLine("ID\tTitle\tPublishedDate\tPrice\tQuantity\tSatus");
-            if (res.Success)
-                books.ForEach(book =>
-                {
-                   if (book.PublishedDate.Equals(DateTime.MinValue))
-                        Console.WriteLine($"{book.Id} - {book.Title} - {book.PageCount} - null - {book.Price} - {book.Quantity} - {book.Status}");
-                    Console.WriteLine($"{book.Id} - {book.Title} - {book.PageCount} - {book.PublishedDate} - {book.Price} - {book.Quantity} - {book.Status}");
-
-                });
-
-            Console.WriteLine(res.Message);*/
-            var book = new Book()
-            {
-                Title = "Test book",
-                PageCount = 264,
-                Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-                Isbn = "1234567890",
-                ImagelUrl = null,
-                PublishedDate = DateTime.Now,
-                Price = 23.99M,
-                Status = "PUBLISH",
-                Quantity = 1,
-                Authors = new List<string>() { "Diego", "Klaus" },
-                Categories = new List<string>() { "JavaScript", "Design Pattern" }
+            
+            DbConnection db = new DbConnection("127.0.0.1", "Bookstore", "sa", "JDiego1808!");
+            SellerRepository sellerRepository = new SellerRepository(db);
+            var login = sellerRepository.Login("0964524062", "210801");
+            Seller seller = login.Seller;
+            Console.WriteLine(seller);
+            TransactionRepository tr = new TransactionRepository(db, sellerRepository);
+            Dictionary<string, int> books = new () {
+                { "53c2ae8528d75d572c06ad9d", 1 },
+                { "53c2ae8528d75d572c06ad9f", 1 }
             };
-            var res = bookRespository.InsertBook(book);
-            Console.WriteLine(res.Message);
+            Dictionary<string, int> stationeries = new () {
+                { "00ac74ced6ad4425a69ed6d0", 3 },
+                { "02caaf41bc3649dab0278175", 2 }
+            };
+            Transaction res = tr.Create(seller.Id, books, stationeries);
 
+            var result = tr.GetInvoice(res);
+            Invoice invoice = result.Bill;
+            Console.WriteLine($"{invoice.Id} - {invoice.Date} - {invoice.Seller} - {invoice.Total}");
+            invoice.Items.ForEach(b => Console.WriteLine(b));
+            var res2 = tr.Add(res);
+            if(res2.Success) Console.WriteLine(res2.SuccessMessage);
+            else Console.WriteLine(res2.ErrorMessage);
+            sellerRepository.Logout();
 
         }
+
     }
 }

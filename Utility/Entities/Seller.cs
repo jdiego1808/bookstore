@@ -12,5 +12,10 @@ namespace Utility.Entities
         public string Password { get; set; }
         public string Hash { get; set; }
         public string Role { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} - {Name} - {Phone} - {Address} - {Hash} - {Role}";
+        }
     }
 }
