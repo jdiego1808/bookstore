@@ -153,9 +153,7 @@ namespace Utility.Repositories
                 
                 return SqlHelper.ExecuteNonQuery(_connectionString, CommandType.Text, cmd, sqlParams);
             }
-            catch(Exception ex) {
-                throw ex;
-            }
+            catch{ throw; }
 
         }
 

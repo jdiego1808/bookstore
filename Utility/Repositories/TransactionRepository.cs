@@ -142,8 +142,8 @@ namespace Utility.Repositories
                 });
 
             }
-            catch(Exception ex) {
-                throw ex;
+            catch {
+                throw;
             }
         }
 

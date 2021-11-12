@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using Utility.Entities;
 using Utility.Entities.Responses;
+using System.Globalization;
 
 namespace Utility.Repositories
 {
@@ -18,7 +19,7 @@ namespace Utility.Repositories
         }
 
         public BookRepository() {
-            DbConnection connection = new DbConnection("Bookstore", "sa", "qwertASDF");
+            DbConnection connection = new ("BooksDB", "sa", "qwertASDF");
             _connectionString = connection.GetConnectionString();
         }
 
@@ -26,69 +27,58 @@ namespace Utility.Repositories
             try {
                 var books = new List<Book>();
                 var cmdBooks = "SELECT * FROM books";
-                var cmdAuthors = "SELECT * FROM authors";
+               /* var cmdAuthors = "SELECT * FROM authors";
                 var cmdCategories = "SELECT * FROM categories";
 
+                Dictionary<string, List<string>> categories = new();
+                Dictionary<string, List<string>> authors = new();
+
                 using var dsAuthors = SqlHelper.ExecuteDataset(_connectionString, CommandType.Text, cmdAuthors);
-                Dictionary<string, List<string>> authors = new Dictionary<string, List<string>>();
-
-                authors = dsAuthors.Tables[0].AsEnumerable()
-                    .GroupBy(r => r.Field<string>("bookId"))
-                    .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("author")).ToList());
-
-                // foreach (DataRow row in dsAuthors.Tables[0].Rows)
-                // {
-                //     var bookId = row["bookId"].ToString();
-                //     var authorId = row["author"].ToString();
-                //     if (!authors.ContainsKey(bookId))
-                //     {
-                //         authors.Add(bookId, new List<string>());
-                //     }
-                //     authors[bookId].Add(authorId);
-                // }
-
-                using var dsCategories = SqlHelper.ExecuteDataset(_connectionString, CommandType.Text, cmdCategories);
-                
-                Dictionary<string, List<string>> categories = new Dictionary<string, List<string>>();
-
-                categories = dsCategories.Tables[0].AsEnumerable()
-                    .GroupBy(r => r.Field<string>("bookId"))
-                    .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("author")).ToList());
-
-                // foreach (DataRow row in dsCategories.Tables[0].Rows)
-                // {
-                //     var bookId = row["bookId"].ToString();
-                //     var categoryId = row["category"].ToString();
-                //     if (!categories.ContainsKey(bookId))
-                //     {
-                //         categories.Add(bookId, new List<string>());
-                //     }
-                //     categories[bookId].Add(categoryId);
-                // }
-
-                using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmdBooks);
-
-                while (reader.Read())
                 {
-                    string id = reader["id"].ToString();
-                    var book = new Book
+                    authors = dsAuthors.Tables[0].AsEnumerable()
+                        .GroupBy(r => r.Field<string>("bookId"))
+                        .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("author")).ToList());
+                }
+                using var dsCategories = SqlHelper.ExecuteDataset(_connectionString, CommandType.Text, cmdCategories);
+                {
+                    categories = dsCategories.Tables[0].AsEnumerable()
+                        .GroupBy(r => r.Field<string>("bookId"))
+                        .ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("category")).ToList());
+                }*/
+
+                
+                using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmdBooks);
+                {
+                    if (reader.HasRows)
                     {
-                        Id = id,
-                        Title = reader["title"].ToString(),
-                        Isbn = reader["isbn"].ToString(),
-                        PageCount = Convert.ToInt32(reader["pageCount"]),
-                        Description = reader["description"].ToString(),
-                        PublishedDate = DateTime.Parse(reader["publishedDate"].ToString()),
-                        Status = reader["status"].ToString(),
-                        ImagelUrl = reader["thumbnailurl"].ToString(),
-                        Price = Convert.ToDecimal(reader["price"]),
-                        Quantity = Convert.ToInt32(reader["quantity"]),
-                        Authors = authors.TryGetValue(id, out var authorList) ? authorList : new List<string>(),
-                        Categories = categories.TryGetValue(id, out var categoryList) ? categoryList : new List<string>()
-                    };
-                    books.Add(book);
+                        while (reader.Read())
+                        {
+                            string id = reader["id"].ToString();
+                            var book = new Book() { Id = id };
+                            string d = reader["publishedDate"].ToString();
+                            if (string.IsNullOrEmpty(d)) book.PublishedDate = DateTime.MinValue;
+                            else book.PublishedDate = DateTime.Parse(d, CultureInfo.InvariantCulture);
+                            book.Title = reader["title"].ToString();
+                            book.Isbn = reader["isbn"].ToString();
+                            book.PageCount = Convert.ToInt32(reader["pageCount"]);
+                            book.Description = reader["description"] != null ? reader["description"].ToString() : "";
+                            book.Status = reader["status"].ToString();
+                            book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
+                            book.Price = Convert.ToDecimal(reader["price"]);
+                            book.Quantity = Convert.ToInt32(reader["quantity"]);
+                            /* book.Authors = authors.TryGetValue(id, out List<string> authorList) ? authorList : new List<string>();
+                             book.Categories = categories.TryGetValue(id, out List<string> categoryList) ? categoryList : new List<string>();*/
+                            book.Authors = GetAuthorsByBookId(id);
+                            book.Categories = GetCategoriesByBookId(id);
+                            
+                            books.Add(book);
+                        }
+                       
+                    }
+                    else return new BooksResponse(false, "Fetch data failed");
                 }
 
+                
                 return new BooksResponse(true, "Fetch data successful", books);
             }
             catch (Exception ex) {
@@ -102,21 +92,20 @@ namespace Utility.Repositories
                 using var reader = SqlHelper.ExecuteReader(_connectionString, CommandType.Text, cmd, new SqlParameter("@id", id));
                 if (reader.Read())
                 {
-                    var book = new Book
-                    {
-                        Id = id,
-                        Title = reader["title"].ToString(),
-                        Isbn = reader["isbn"].ToString(),
-                        PageCount = Convert.ToInt32(reader["pageCount"]),
-                        Description = reader["description"].ToString(),
-                        PublishedDate = DateTime.Parse(reader["publishedDate"].ToString()),
-                        Status = reader["status"].ToString(),
-                        ImagelUrl = reader["thumbnailurl"].ToString(),
-                        Price = Convert.ToDecimal(reader["price"]),
-                        Quantity = Convert.ToInt32(reader["quantity"]),
-                        Authors = GetAuthorsByBookId(id),
-                        Categories = GetCategoriesByBookId(id)
-                    };
+                    var book = new Book() { Id = id };
+                    string d = reader["publishedDate"].ToString();
+                    if (string.IsNullOrEmpty(d)) book.PublishedDate = DateTime.MinValue;
+                    else book.PublishedDate = DateTime.Parse(d, CultureInfo.InvariantCulture);
+                    book.Title = reader["title"].ToString();
+                    book.Isbn = reader["isbn"].ToString();
+                    book.PageCount = Convert.ToInt32(reader["pageCount"]);
+                    book.Description = reader["description"] != null ? reader["description"].ToString() : "";
+                    book.Status = reader["status"].ToString();
+                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
+                    book.Price = Convert.ToDecimal(reader["price"]);
+                    book.Quantity = Convert.ToInt32(reader["quantity"]);
+                    book.Authors = GetAuthorsByBookId(id);
+                    book.Categories = GetCategoriesByBookId(id);
                     return new BooksResponse(true, "Fetch data successful", book);
                 }
                 return new BooksResponse(false, "Book not found");
@@ -134,21 +123,22 @@ namespace Utility.Repositories
                 var books = new List<Book>();
                 while (reader.Read())
                 {
-                    var book = new Book
-                    {
-                        Id = reader["id"].ToString(),
-                        Title = reader["title"].ToString(),
-                        Isbn = reader["isbn"].ToString(),
-                        PageCount = Convert.ToInt32(reader["pageCount"]),
-                        Description = reader["description"].ToString(),
-                        PublishedDate = DateTime.Parse(reader["publishedDate"].ToString()),
-                        Status = reader["status"].ToString(),
-                        ImagelUrl = reader["thumbnailurl"].ToString(),
-                        Price = Convert.ToDecimal(reader["price"]),
-                        Quantity = Convert.ToInt32(reader["quantity"]),
-                        Authors = GetAuthorsByBookId(reader["id"].ToString()),
-                        Categories = GetCategoriesByBookId(reader["id"].ToString())
-                    };
+                    string id = reader["id"].ToString();
+                    var book = new Book() { Id = id };
+                    string d = reader["publishedDate"].ToString();
+                    if (string.IsNullOrEmpty(d)) book.PublishedDate = DateTime.MinValue;
+                    else book.PublishedDate = DateTime.Parse(d, CultureInfo.InvariantCulture);
+                    book.Title = reader["title"].ToString();
+                    book.Isbn = reader["isbn"].ToString();
+                    book.PageCount = Convert.ToInt32(reader["pageCount"]);
+                    book.Description = reader["description"] != null ? reader["description"].ToString() : "";
+                    book.Status = reader["status"].ToString();
+                    book.ImagelUrl = reader["thumbnailUrl"] != null ? reader["thumbnailUrl"].ToString() : "";
+                    book.Price = Convert.ToDecimal(reader["price"]);
+                    book.Quantity = Convert.ToInt32(reader["quantity"]);
+                    book.Authors = GetAuthorsByBookId(id);
+                    book.Categories = GetAuthorsByBookId(id);
+
                     books.Add(book);
                 }
                 return new BooksResponse(true, "Fetch data successful", books);
@@ -318,9 +308,7 @@ namespace Utility.Repositories
                 }
                 return rowAffected;
             }
-            catch (Exception ex) {
-                throw ex;
-            }
+            catch { throw; }
         }
 
         // Insert book categories
@@ -340,9 +328,7 @@ namespace Utility.Repositories
                 }
                 return rowAffected;
             }
-            catch (Exception ex) {
-                throw ex;
-            }
+            catch { throw; }
         }
 
         // Insert a new book

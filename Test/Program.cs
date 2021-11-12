@@ -3,6 +3,8 @@ using Utility;
 using System.Collections.Generic;
 using System.Linq;
 using System.Data;
+using Utility.Repositories;
+using Utility.Entities;
 
 namespace Test
 {
@@ -10,77 +12,38 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            // string pwd = "admin";
-            // string hash = PasswordHashOMatic.Hash(pwd);
-            // Console.WriteLine(hash);
-            // DataTable dt = new DataTable("Test");
-            // DataColumn column;
-            // DataRow row;
-            // column = new DataColumn();
-            // column.DataType = System.Type.GetType("System.String");
-            // column.ColumnName = "id";
-            // column.AutoIncrement = false;
-            // column.Unique = false;
-            // dt.Columns.Add(column);
+           BookRepository bookRespository = new();
+            /* var res = bookRespository.GetAll();
+             var books = res.Books;
+           
+            Console.WriteLine("ID\tTitle\tPublishedDate\tPrice\tQuantity\tSatus");
+            if (res.Success)
+                books.ForEach(book =>
+                {
+                   if (book.PublishedDate.Equals(DateTime.MinValue))
+                        Console.WriteLine($"{book.Id} - {book.Title} - {book.PageCount} - null - {book.Price} - {book.Quantity} - {book.Status}");
+                    Console.WriteLine($"{book.Id} - {book.Title} - {book.PageCount} - {book.PublishedDate} - {book.Price} - {book.Quantity} - {book.Status}");
 
-            // column = new DataColumn();
-            // column.DataType = System.Type.GetType("System.String");
-            // column.ColumnName = "author";
-            // column.AutoIncrement = false;
-            // column.ReadOnly = false;
-            // column.Unique = false;
-            // dt.Columns.Add(column);
+                });
 
-            // row = dt.NewRow();
-            // row["id"] = "20001111";
-            // row["author"] = "Conan";
-            // dt.Rows.Add(row);
+            Console.WriteLine(res.Message);*/
+            var book = new Book()
+            {
+                Title = "Test book",
+                PageCount = 264,
+                Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+                Isbn = "1234567890",
+                ImagelUrl = null,
+                PublishedDate = DateTime.Now,
+                Price = 23.99M,
+                Status = "PUBLISH",
+                Quantity = 1,
+                Authors = new List<string>() { "Diego", "Klaus" },
+                Categories = new List<string>() { "JavaScript", "Design Pattern" }
+            };
+            var res = bookRespository.InsertBook(book);
+            Console.WriteLine(res.Message);
 
-            // row = dt.NewRow();
-            // row["id"] = "20001111";
-            // row["author"] = "Sherlock";
-            // dt.Rows.Add(row);
-
-            // row = dt.NewRow();
-            // row["id"] = "20001211";
-            // row["author"] = "Authur";
-            // dt.Rows.Add(row);
-
-            // row = dt.NewRow();
-            // row["id"] = "20001211";
-            // row["author"] = "Diego";
-            // dt.Rows.Add(row);
-
-            // row = dt.NewRow();
-            // row["id"] = "20002211";
-            // row["author"] = "Niklaus";
-            // dt.Rows.Add(row);
-            
-            // Dictionary<string, List<string>> dict = new Dictionary<string, List<string>>();
-            // dict = dt.AsEnumerable().GroupBy(r => r.Field<string>("id")).ToDictionary(r => r.Key, r => r.Select(x => x.Field<string>("author")).ToList());
-
-            // // Print the dictionary.
-            // foreach (KeyValuePair<string, List<string>> kvp in dict)
-            // {
-            //     Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, string.Join(", ", kvp.Value));
-            // }
-
-            // // Find values that match the specified key.
-            // List<string> values;
-            // if (dict.TryGetValue("20001111", out values))
-            // {
-            //     Console.WriteLine("Values for key '20001111': {0}", string.Join(", ", values));
-            // }
-            // else
-            // {
-            //     Console.WriteLine("No values found for key '20001111'.");
-            // }
-            var id = Guid.NewGuid().ToString();
-            Console.WriteLine(id);
-            var tokens = id.Split("-");
-            tokens[tokens.Length - 1] = tokens[tokens.Length - 1].Substring(0, 4);
-            var final = string.Join("", tokens);
-            Console.WriteLine(final);
 
         }
     }

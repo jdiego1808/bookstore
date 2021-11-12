@@ -1043,32 +1043,34 @@
     ]
   },
   "packageFolders": {
-    "/home/jdiego/.nuget/packages/": {}
+    "C:\\Users\\nhath\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/jdiego/projects/import_data/Test/Test.csproj",
+      "projectUniqueName": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Test\\Test.csproj",
       "projectName": "Test",
-      "projectPath": "/home/jdiego/projects/import_data/Test/Test.csproj",
-      "packagesPath": "/home/jdiego/.nuget/packages/",
-      "outputPath": "/home/jdiego/projects/import_data/Test/obj/",
+      "projectPath": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Test\\Test.csproj",
+      "packagesPath": "C:\\Users\\nhath\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Test\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/jdiego/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\nhath\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net5.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net5.0": {
           "targetAlias": "net5.0",
           "projectReferences": {
-            "/home/jdiego/projects/import_data/Utility/Utility.csproj": {
-              "projectPath": "/home/jdiego/projects/import_data/Utility/Utility.csproj"
+            "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Utility\\Utility.csproj": {
+              "projectPath": "C:\\Users\\nhath\\OneDrive\\Desktop\\classes\\dotnet\\bookstore\\Utility\\Utility.csproj"
             }
           }
         }
@@ -1092,26 +1094,12 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[5.0.0, 5.0.0]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.linux-x64",
-            "version": "[5.0.11, 5.0.11]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[5.0.0, 5.0.0]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/5.0.402/RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.401\\RuntimeIdentifierGraph.json"
       }
     }
   }

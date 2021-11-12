@@ -29,6 +29,7 @@ namespace Utility.Entities
         {
             _userName = userName;
             _password = password;
+            _databaseName = database;
         }
 
         public string GetConnectionString()
